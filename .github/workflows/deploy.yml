@@ -1,0 +1,35 @@
+name: Deploy to Cloud Run
+# GitHubにコードをpushすると自動でCloud Runにデプロイするための設定ファイル
+
+on:
+  push:
+    branches:
+      - main  # mainブランチにpushされたら実行
+
+jobs:
+  deploy: # deployという名前の処理（ジョブ）を定義
+    runs-on: ubuntu-latest # 最新のUbuntu環境で実行する
+
+    steps:
+    - name: Checkout repository # GitHub リポジトリのコードを取得
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud # Google Cloudに認証
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }} # GitHub Secretsに保存したGCP_SA_KEYを使って認証 
+
+    - name: Set up Google Cloud SDK # Google Cloud SDKをセットアップ
+      uses: google-github-actions/setup-gcloud@v1 #Google Cloudのコマンド（gcloud）を使えるようにする
+
+    - name: Build and Push Docker image # Dockerイメージをビルド
+      run: | # Google Cloud の Container Registry にアップロード
+        gcloud builds submit --tag gcr.io/titanic-project-450108/titanic-api
+
+    - name: Deploy to Cloud Run 
+      run: | # titanic-api という Cloud Run サービスにデプロイ
+        gcloud run deploy titanic-api \
+          --image gcr.io/titanic-project-450108/titanic-api \
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated
