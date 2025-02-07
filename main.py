@@ -33,3 +33,4 @@ def  predict(data: dict): # クライアント(ブラウザ)から送られた�
         "prediction": int(prediction[0]), # 0 or 1
         "survival_probability": float(survival_probability[0]) # 確率
     }
+    
