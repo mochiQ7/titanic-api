@@ -1,6 +1,7 @@
 from fastapi import FastAPI 
+from pydantic import BaseModel, Field
 import joblib
-import pandas as pd 
+import pandas as pd
 
 # FastAPIのインスタンスを作成
 app = FastAPI()
@@ -12,14 +13,23 @@ model = joblib.load("Titanic_model.pkl")
 def root():
     return {"message": "Titanic API is running"}
 
+# データバリエーション用のモデル
+class PassengerData(BaseModel):
+    Pclass: int = Field(..., ge=1, le=3, description="Passenger class (1, 2, or 3)")
+    Sex: str = Field(..., regex="^(male|female)$", description="Sex (male or female)")
+    Age: float = Field(..., ge=0, le=100, description="Age (0-100)")
+    SibSp: int = Field(..., ge=0, le=10, description="Number of siblings/spouses")
+    Fare: float = Field(..., ge=0, description="Ticket fare (must be positive)")
+
+
 # 予測用のAPIエンドポイント
 @app.post("/predict") #POST/predictにリクエストを送ると、この関数が動く
-def  predict(data: dict): # クライアント(ブラウザ)から送られたデータをdata()
+def  predict(data: PassengerData): # クライアント(ブラウザ)から送られたデータをdata()
     # 必要な特徴量を取得
     features = ["Pclass", "Sex", "Age", "SibSp", "Fare"]
 
     # JSONデータをDataFrameに変換
-    df = pd.DataFrame([data])
+    df = pd.DataFrame([data.dict()])
 
     # "Sex"を0,1に変換
     df["Sex"] = df["Sex"].map({"male": 0, "female": 1})
